@@ -121,37 +121,49 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildTopPanel()
     {
-        _topPanel = new Panel
+        _topPanel = new Panel { Dock = DockStyle.Top, Height = 72 };
+
+        var table = new TableLayoutPanel
         {
-            Dock    = DockStyle.Top,
-            Height  = 72,
-            Padding = new Padding(6, 4, 6, 4)
+            Dock        = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount    = 3,
+            Padding     = new Padding(6, 4, 6, 4),
+            Margin      = Padding.Empty
         };
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _lblWD = new Label
         {
-            Text      = "Working Directory:",
-            AutoSize  = true,
-            Location  = new Point(6, 5),
-            Font      = new Font(Font, FontStyle.Bold)
+            Text     = "Working Directory:",
+            AutoSize = true,
+            Font     = new Font(Font, FontStyle.Bold),
+            Margin   = new Padding(0, 0, 0, 2)
         };
 
         _cboRepo = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
-            Bounds        = new Rectangle(6, 22, 398, 22),
-            Anchor        = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
+            Dock          = DockStyle.Fill,
+            Margin        = new Padding(0, 0, 0, 2)
         };
         _cboRepo.SelectedIndexChanged += CboRepo_SelectedIndexChanged;
 
         _lblBranch = new Label
         {
             AutoSize = true,
-            Location = new Point(6, 50),
-            Text     = "Branch: "
+            Text     = "Branch: ",
+            Margin   = Padding.Empty
         };
 
-        _topPanel.Controls.AddRange([_lblWD, _cboRepo, _lblBranch]);
+        table.Controls.Add(_lblWD,     0, 0);
+        table.Controls.Add(_cboRepo,   0, 1);
+        table.Controls.Add(_lblBranch, 0, 2);
+
+        _topPanel.Controls.Add(table);
     }
 
     private void BuildFilterPanel()

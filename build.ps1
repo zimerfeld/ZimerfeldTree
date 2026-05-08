@@ -31,7 +31,9 @@ $spec.Save($nuspec)
 
 # -- 3. Atualizar csproj -------------------------------------------------------
 $csprojContent = Get-Content $csproj -Raw -Encoding UTF8
-$csprojContent = $csprojContent -replace '<Version>[^<]+</Version>', "<Version>$newVersion</Version>"
+$csprojContent = $csprojContent -replace '<Version>[^<]+</Version>',         "<Version>$newVersion</Version>"
+$csprojContent = $csprojContent -replace '<AssemblyVersion>[^<]+</AssemblyVersion>', "<AssemblyVersion>$newVersion.0</AssemblyVersion>"
+$csprojContent = $csprojContent -replace '<FileVersion>[^<]+</FileVersion>',   "<FileVersion>$newVersion.0</FileVersion>"
 [System.IO.File]::WriteAllText($csproj, $csprojContent, [System.Text.Encoding]::UTF8)
 
 # -- 4. Build ------------------------------------------------------------------

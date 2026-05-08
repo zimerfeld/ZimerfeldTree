@@ -268,33 +268,43 @@ public sealed class BranchHierarchyService
 
             var doc = XDocument.Load(settingsFile);
 
-            // GitExtensions 3.x / 4.x stores recent paths as:
-            //   <String name="history" value="path1|path2|..." />
-            //   OR as child <item> elements under a collection element.
+            // GitExtensions stores repository history under key "history" as an
+            // XML-encoded string:
+            //   <item>
+            //     <key><string>history</string></key>
+            //     <value><string>&lt;RepositoryHistory&gt;&lt;Repositories&gt;
+            //       &lt;Repository&gt;&lt;Path&gt;C:\...\&lt;/Path&gt;&lt;/Repository&gt;
+            //     &lt;/Repositories&gt;&lt;/RepositoryHistory&gt;</string></value>
+            //   </item>
 
-            // Strategy 1: look for | separated history string value
-            var historyAttr = doc.Descendants()
-                .Where(e => (string?)e.Attribute("name") == "history" ||
-                            (string?)e.Attribute("key") == "history")
-                .Select(e => (string?)e.Attribute("value"))
-                .FirstOrDefault(v => v != null && v.Contains('|'));
+            var historyValue = doc
+                .Descendants("item")
+                .FirstOrDefault(item =>
+                    item.Element("key")?.Element("string")?.Value
+                        .Equals("history", StringComparison.OrdinalIgnoreCase) == true)
+                ?.Element("value")
+                ?.Element("string")
+                ?.Value;
 
-            if (historyAttr is not null)
+            if (!string.IsNullOrWhiteSpace(historyValue))
             {
-                foreach (var p in historyAttr.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                var inner = XDocument.Parse(historyValue);
+                foreach (var pathEl in inner.Descendants("Path"))
                 {
-                    var trimmed = p.Trim();
-                    if (!string.IsNullOrEmpty(trimmed)) result.Add(trimmed);
+                    var path = pathEl.Value?.Trim();
+                    if (!string.IsNullOrEmpty(path))
+                        result.Add(path);
                 }
-                return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+                if (result.Count > 0)
+                    return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             }
 
-            // Strategy 2: scan all element values that look like valid git working dirs
+            // Fallback: scan all element values that look like valid git working dirs
             foreach (var el in doc.Descendants())
             {
                 var val = el.Value?.Trim();
-                if (string.IsNullOrEmpty(val)) continue;
-                if (val.Length < 3 || val.Length > 260) continue;
+                if (string.IsNullOrEmpty(val) || val.Length < 3 || val.Length > 260) continue;
                 if (val.Contains('\n') || val.Contains('\r')) continue;
                 try
                 {
@@ -305,10 +315,10 @@ public sealed class BranchHierarchyService
                         result.Add(val);
                     }
                 }
-                catch { /* invalid path characters — skip */ }
+                catch { }
             }
         }
-        catch { /* parse error — return empty */ }
+        catch { }
 
         return result.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
