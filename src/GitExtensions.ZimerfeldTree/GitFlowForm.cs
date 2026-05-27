@@ -22,6 +22,8 @@ public sealed class GitFlowForm : Form
     private Label    _lblStartPrefix = null!;
     private TextBox  _txtStartName  = null!;
     private Button   _btnStart      = null!;
+    private CheckBox _chkBasedOn    = null!;
+    private ComboBox _cboBasedOn    = null!;
 
     // ── Manage existing branches ──
     private GroupBox _grpManage      = null!;
@@ -46,8 +48,8 @@ public sealed class GitFlowForm : Form
         _svc = svc;
 
         Text            = "GitFlow";
-        Size            = new Size(662, 612);
-        MinimumSize     = new Size(560, 500);
+        Size            = new Size(662, 624);
+        MinimumSize     = new Size(560, 512);
         FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox     = true;
         MinimizeBox     = false;
@@ -89,7 +91,7 @@ public sealed class GitFlowForm : Form
     {
         _grpStart = new GroupBox
         {
-            Bounds = new Rectangle(8, 36, 638, 116),
+            Bounds = new Rectangle(8, 36, 638, 128),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -122,8 +124,24 @@ public sealed class GitFlowForm : Form
         };
         _btnStart.Click += (_, _) => DoStart();
 
+        _chkBasedOn = new CheckBox
+        {
+            Text   = "based on:",
+            Bounds = new Rectangle(108, 96, 90, 22)
+        };
+        _chkBasedOn.CheckedChanged += (_, _) => _cboBasedOn.Enabled = _chkBasedOn.Checked;
+
+        _cboBasedOn = new ComboBox
+        {
+            Bounds        = new Rectangle(200, 94, 324, 24),
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Enabled       = false,
+            Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+        };
+
         _grpStart.Controls.AddRange(
-            [lblType, _cboStartType, lblName, _lblStartPrefix, _txtStartName, _btnStart]);
+            [lblType, _cboStartType, lblName, _lblStartPrefix, _txtStartName, _btnStart,
+             _chkBasedOn, _cboBasedOn]);
         Controls.Add(_grpStart);
     }
 
@@ -132,7 +150,7 @@ public sealed class GitFlowForm : Form
         _grpManage = new GroupBox
         {
             Text   = "Manage existing branches:",
-            Bounds = new Rectangle(8, 160, 638, 200),
+            Bounds = new Rectangle(8, 172, 638, 200),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -218,7 +236,7 @@ public sealed class GitFlowForm : Form
         _grpResult = new GroupBox
         {
             Text   = "Result of git flow command run",
-            Bounds = new Rectangle(8, 368, 638, 156),
+            Bounds = new Rectangle(8, 380, 638, 156),
             Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
         };
         _txtResult = new TextBox
@@ -241,7 +259,7 @@ public sealed class GitFlowForm : Form
         _btnClose = new Button
         {
             Text         = "Close",
-            Bounds       = new Rectangle(286, 532, 90, 28),
+            Bounds       = new Rectangle(286, 544, 90, 28),
             Anchor       = AnchorStyles.Bottom,
             DialogResult = DialogResult.Cancel
         };
@@ -259,6 +277,14 @@ public sealed class GitFlowForm : Form
         _cboRemote.Items.AddRange([.. remotes]);
         if (remotes.Count > 0)
             _cboRemote.SelectedIndex = remotes.FindIndex(r => r == "origin") is var i && i >= 0 ? i : 0;
+
+        _cboBasedOn.Items.Clear();
+        _cboBasedOn.Items.Add("develop");
+        foreach (var b in _svc.GetLocalBranches())
+            if (!_cboBasedOn.Items.Contains(b.FullName))
+                _cboBasedOn.Items.Add(b.FullName);
+        _cboBasedOn.SelectedIndex = 0; // "develop" is the default base
+        _cboBasedOn.Enabled = _chkBasedOn.Checked;
 
         _cboStartType.SelectedIndex  = 0; // triggers prefix update
         _cboManageType.SelectedIndex = 0; // triggers branch reload
@@ -293,7 +319,14 @@ public sealed class GitFlowForm : Form
             return;
         }
 
-        RunFlow($"flow {type} start \"{name}\"");
+        string baseArg = string.Empty;
+        if (_chkBasedOn.Checked)
+        {
+            string baseBranch = Clean(_cboBasedOn.Text);
+            if (baseBranch.Length > 0) baseArg = $" \"{baseBranch}\"";
+        }
+
+        RunFlow($"flow {type} start \"{name}\"{baseArg}");
         _txtStartName.Clear();
     }
 

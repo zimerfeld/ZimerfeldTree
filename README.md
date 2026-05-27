@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.41**
+**Versão atual: 1.0.42**
 
 ---
 
@@ -66,6 +66,14 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 | Atualizar | Sempre |
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit do GitExtensions já apontando para o repositório em exibição.
+
+### Janela GitFlow — branch base no Start
+
+No painel **Start branch** da janela GitFlow, além de tipo e nome, há a opção **based on:**:
+
+- Por padrão o dropdown fica **desabilitado** e usa `develop` como base (comportamento padrão do `git flow ... start`)
+- Ao marcar o checkbox **based on:**, o dropdown é habilitado e lista as branches locais, permitindo iniciar a nova branch a partir de outra — por exemplo, uma **feature filha de outra feature pai**
+- A base escolhida é passada ao comando: `git flow feature start "<nome>" "<base>"`
 
 ### Atalhos de teclado e mouse
 
