@@ -383,10 +383,35 @@ public sealed class GitFlowForm : Form
         string flags = string.Empty;
         if (_chkKeep.Checked)    flags += "-k ";
         if (_chkNoFetch.Checked) flags += "--no-fetch ";
-        RunFlow($"flow {type} finish {flags}\"{name}\"");
+        bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"");
+
+        // After a successful "release" finish: push master, push develop,
+        // and (if both succeed) checkout develop.
+        if (!ok) return;
+        if (!string.Equals(type, "release", StringComparison.OrdinalIgnoreCase)) return;
+
+        string master  = _svc.GetGitFlowBranchName("master");
+        string develop = _svc.GetGitFlowBranchName("develop");
+        string remote  = _svc.GetDefaultRemote();
+        if (remote.Length == 0)
+        {
+            MessageBox.Show(
+                "Release finalizada localmente, mas nenhum remoto configurado para push.",
+                "GitFlow", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        if (!RunFlow($"push {remote} {master}",  append: true)) return;
+        if (!RunFlow($"push {remote} {develop}", append: true)) return;
+        RunFlow($"checkout {develop}", append: true);
     }
 
-    private void RunFlow(string args)
+    /// <summary>
+    /// Runs <c>git {args}</c>, shows the result in the textbox and returns true on exit code 0.
+    /// When <paramref name="append"/> is true, the new output block is appended to the existing
+    /// result text (so multi-step flows like release-finish + push + checkout stay visible).
+    /// </summary>
+    private bool RunFlow(string args, bool append = false)
     {
         string output;
         int code;
@@ -397,7 +422,10 @@ public sealed class GitFlowForm : Form
             string body = output.Length == 0
                 ? (code == 0 ? "(comando concluído)" : "(sem saída)")
                 : output.Replace("\n", "\r\n");
-            _txtResult.Text = $"command - git {args}\r\n\r\n{body}";
+            string block = $"command - git {args}\r\n\r\n{body}";
+            _txtResult.Text = append && _txtResult.Text.Length > 0
+                ? _txtResult.Text + "\r\n\r\n" + block
+                : block;
         }
         finally
         {
@@ -409,6 +437,8 @@ public sealed class GitFlowForm : Form
 
         if (code != 0)
             ShowFlowError(output);
+
+        return code == 0;
     }
 
     /// <summary>

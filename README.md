@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.51**
+**Versão atual: 1.0.52**
 
 ---
 
@@ -84,6 +84,12 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 - **Track** — `git flow <tipo> track "<nome>"`: cria uma branch local que rastreia a branch remota correspondente (útil para branches iniciadas por outra pessoa)
 - **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
 - **Finish** — `git flow <tipo> finish [-k] [--no-fetch] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
+- **Finish de `release` — pós-finalização automática**: quando o tipo é `release` e o `finish` termina sem erro, o painel automaticamente executa em sequência (com as saídas anexadas à janela de resultado):
+  1. `git push <remote> <master>` (nome lido de `gitflow.branch.master`)
+  2. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
+  3. `git checkout <develop>` — só se os dois push tiveram sucesso
+
+  O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se algum passo falhar, o fluxo para naquele ponto e a mensagem de erro é exibida.
 - O dropdown de branch lista as branches locais **e** as remotas do tipo (com o prefixo removido), para que o **Track** possa selecionar uma branch que só existe no remoto
 - Ao abrir a janela, se a branch em **checkout** corresponder a um tipo do git flow (ex.: `feature/manage`), o dropdown de tipo e o dropdown de branch já vêm pré-selecionados nesse tipo e nessa branch
 

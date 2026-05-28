@@ -337,6 +337,36 @@ public sealed class BranchHierarchyService
         return result;
     }
 
+    /// <summary>
+    /// Returns the actual local branch name configured for a git flow role
+    /// (e.g. "master" → reads <c>gitflow.branch.master</c> which may be set to "main").
+    /// Falls back to the role name itself when the config key is missing.
+    /// </summary>
+    public string GetGitFlowBranchName(string role)
+    {
+        try
+        {
+            string s = RunGit($"config --get gitflow.branch.{role}", out int code).Trim();
+            if (code == 0 && s.Length > 0) return s;
+        }
+        catch { }
+        return role;
+    }
+
+    /// <summary>
+    /// Returns the remote to use for push operations: "origin" when present,
+    /// otherwise the first configured remote, or empty string if none.
+    /// </summary>
+    public string GetDefaultRemote()
+    {
+        var remotes = GetRemotes();
+        if (remotes.Count == 0) return string.Empty;
+        foreach (var r in remotes)
+            if (string.Equals(r, "origin", StringComparison.Ordinal))
+                return r;
+        return remotes[0];
+    }
+
     /// <summary>Returns local branches matching a git flow prefix, with the prefix stripped off.</summary>
     public List<string> GetGitFlowBranches(string prefix)
     {
