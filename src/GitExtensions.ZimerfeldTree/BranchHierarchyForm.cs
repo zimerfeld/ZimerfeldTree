@@ -112,8 +112,8 @@ public sealed class BranchHierarchyForm : Form
         SuspendLayout();
 
         Text            = "ZimerfeldTree — Branch Hierarchy";
-        Size            = new Size(420, 720);
-        MinimumSize     = new Size(300, 450);
+        Size            = new Size(580, 720);
+        MinimumSize     = new Size(460, 450);
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.SizableToolWindow;
         Font            = new Font("Segoe UI", 9f);
