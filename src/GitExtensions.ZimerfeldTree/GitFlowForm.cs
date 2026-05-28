@@ -41,26 +41,25 @@ public sealed class GitFlowForm : Form
     private GroupBox _grpResult = null!;
     private TextBox  _txtResult = null!;
 
-    private Button _btnClose = null!;
-
     public GitFlowForm(BranchHierarchyService svc)
     {
         _svc = svc;
 
         Text            = "GitFlow";
-        Size            = new Size(662, 624);
-        MinimumSize     = new Size(560, 512);
+        Size            = new Size(662, 824);
+        MinimumSize     = new Size(560, 640);
         FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox     = true;
         MinimizeBox     = false;
         StartPosition   = FormStartPosition.CenterParent;
         Font            = new Font("Segoe UI", 9f);
+        KeyPreview      = true;
+        KeyDown += (_, e) => { if (e.KeyCode == Keys.Escape) Close(); };
 
         BuildHeader();
         BuildStartGroup();
         BuildManageGroup();
         BuildResultGroup();
-        BuildCloseButton();
 
         Load += (_, _) => InitData();
     }
@@ -236,7 +235,7 @@ public sealed class GitFlowForm : Form
         _grpResult = new GroupBox
         {
             Text   = "Result of git flow command run",
-            Bounds = new Rectangle(8, 380, 638, 156),
+            Bounds = new Rectangle(8, 380, 638, 390),
             Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
         };
         _txtResult = new TextBox
@@ -246,25 +245,12 @@ public sealed class GitFlowForm : Form
             ScrollBars = ScrollBars.Both,
             WordWrap   = false,
             BackColor  = SystemColors.Window,
-            Bounds     = new Rectangle(10, 22, 618, 124),
+            Bounds     = new Rectangle(10, 22, 618, 358),
             Anchor     = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
             Font       = new Font("Consolas", 9f)
         };
         _grpResult.Controls.Add(_txtResult);
         Controls.Add(_grpResult);
-    }
-
-    private void BuildCloseButton()
-    {
-        _btnClose = new Button
-        {
-            Text         = "Close",
-            Bounds       = new Rectangle(286, 544, 90, 28),
-            Anchor       = AnchorStyles.Bottom,
-            DialogResult = DialogResult.Cancel
-        };
-        Controls.Add(_btnClose);
-        CancelButton = _btnClose;
     }
 
     // ── Data ────────────────────────────────────────────────────────────────
