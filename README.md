@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.79**
+**Versão atual: 1.0.81**
 
 TreeOfLife
 
@@ -69,7 +69,7 @@ Exibidos acima da árvore quando há uma branch em checkout:
 
 - **Pull** — executa `git pull --tags`: traz commits da branch rastreada **e** todas as tags do remoto, garantindo que tags de releases criadas em outras máquinas apareçam na seção TAGS
 - **Push** — executa `git push` para a branch atual; o botão mostra `Push ↑N` quando há commits locais pendentes
-- **Commit (N)** — abre a janela de Commit nativa do GitExtensions; `N` = nº de alterações pendentes
+- **Commit** / **Commit (N)** — abre a janela de Commit nativa do GitExtensions; o contador `(N)` só aparece quando há alterações pendentes; sem alterações o botão e o item do menu de contexto mostram apenas `Commit`
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 
 ### Persistência de estado da árvore
