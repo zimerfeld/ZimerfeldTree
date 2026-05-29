@@ -92,51 +92,66 @@ public sealed class GitFlowForm : Form
 
     private void BuildStartGroup()
     {
+        // "Start branch" is now the GroupBox title — no separate lblType inside.
         _grpStart = new GroupBox
         {
-            Bounds = new Rectangle(8, 36, 638, 128),
+            Text   = "Start branch",
+            Bounds = new Rectangle(8, 36, 638, 120),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
-        var lblType = new Label { Text = "Start branch:",  Bounds = new Rectangle(12, 24, 90, 20) };
+        // Row 1 — type selector (col label x=12, col input x=108)
+        var lblType = new Label
+        {
+            Text      = "Type:",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Bounds    = new Rectangle(12, 24, 90, 22)
+        };
         _cboStartType = new ComboBox
         {
-            Bounds        = new Rectangle(108, 21, 180, 24),
+            Bounds        = new Rectangle(108, 22, 180, 24),
             DropDownStyle = ComboBoxStyle.DropDownList
         };
         _cboStartType.Items.AddRange([.. BranchHierarchyService.GitFlowTypes]);
         _cboStartType.SelectedIndexChanged += (_, _) =>
             _lblStartPrefix.Text = _svc.GetGitFlowPrefix(_cboStartType.Text);
 
-        var lblName = new Label { Text = "Expected name:", Bounds = new Rectangle(12, 60, 90, 20) };
+        // Row 2 — expected name (prefix label + text input + Start! button)
+        var lblName = new Label
+        {
+            Text      = "Expected name:",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Bounds    = new Rectangle(12, 54, 90, 22)
+        };
         _lblStartPrefix = new Label
         {
             TextAlign = ContentAlignment.MiddleRight,
-            Bounds    = new Rectangle(100, 60, 60, 22)
+            Bounds    = new Rectangle(108, 54, 60, 22)
         };
         _txtStartName = new TextBox
         {
-            Bounds = new Rectangle(164, 58, 360, 22),
+            Bounds = new Rectangle(172, 54, 356, 22),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _btnStart = new Button
         {
             Text   = "Start!",
-            Bounds = new Rectangle(534, 56, 90, 26),
+            Bounds = new Rectangle(534, 52, 90, 26),
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
         _btnStart.Click += (_, _) => DoStart();
 
+        // Row 3 — optional base branch
         _chkBasedOn = new CheckBox
         {
             Text   = "based on:",
-            Bounds = new Rectangle(108, 96, 90, 22)
+            Bounds = new Rectangle(108, 84, 90, 22)
         };
         _chkBasedOn.CheckedChanged += (_, _) => _cboBasedOn.Enabled = _chkBasedOn.Checked;
 
         _cboBasedOn = new ComboBox
         {
-            Bounds        = new Rectangle(200, 94, 324, 24),
+            Bounds        = new Rectangle(202, 82, 322, 24),
             DropDownStyle = ComboBoxStyle.DropDownList,
             Enabled       = false,
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
@@ -153,79 +168,84 @@ public sealed class GitFlowForm : Form
         _grpManage = new GroupBox
         {
             Text   = "Manage existing branches:",
-            Bounds = new Rectangle(8, 172, 638, 200),
+            Bounds = new Rectangle(8, 164, 638, 192),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
+        // Row 1 — type selector (aligned with grpStart: label x=12, input x=108)
+        var lblType = new Label
+        {
+            Text      = "Type:",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Bounds    = new Rectangle(12, 24, 90, 22)
+        };
         _cboManageType = new ComboBox
         {
-            Bounds        = new Rectangle(210, 22, 180, 24),
-            DropDownStyle = ComboBoxStyle.DropDownList,
-            Anchor        = AnchorStyles.Top | AnchorStyles.Right
+            Bounds        = new Rectangle(108, 22, 180, 24),
+            DropDownStyle = ComboBoxStyle.DropDownList
         };
         _cboManageType.Items.AddRange([.. BranchHierarchyService.GitFlowTypes]);
         _cboManageType.SelectedIndexChanged += (_, _) => ReloadManageBranches();
 
+        // Row 2 — branch selector (same column positions as grpStart name row)
         var lblBranch = new Label
         {
-            Text      = "branch:",
-            TextAlign = ContentAlignment.MiddleRight,
-            Bounds    = new Rectangle(40, 58, 60, 20),
-            Anchor    = AnchorStyles.Top | AnchorStyles.Right
+            Text      = "Branch:",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Bounds    = new Rectangle(12, 54, 90, 22)
         };
         _lblManagePrefix = new Label
         {
             Text      = "/",
             TextAlign = ContentAlignment.MiddleRight,
-            Bounds    = new Rectangle(104, 58, 100, 20),
-            Anchor    = AnchorStyles.Top | AnchorStyles.Right
+            Bounds    = new Rectangle(108, 54, 60, 22)
         };
         _cboManageBranch = new ComboBox
         {
-            Bounds        = new Rectangle(210, 56, 410, 24),
+            Bounds        = new Rectangle(172, 52, 452, 24),
             DropDownStyle = ComboBoxStyle.DropDown,
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
-        // ── Buttons row: 4 × 140 px, gap 18 px, left margin 12 px ───────────────
-        // (12) [Publish 140] (18) [Track 140] (18) [Update 140] (18) [Finish 140] (12) = 638 ✓
-        _btnPublish = new Button { Text = "Publish", Bounds = new Rectangle( 12, 104, 140, 26) };
+        // ── Buttons row: 4 × 140 px, gap 18 px, left margin 12 px ──────────────
+        // (12)[Publish 140](18)[Track 140](18)[Update 140](18)[Finish 140](12) = 638 ✓
+        _btnPublish = new Button { Text = "Publish", Bounds = new Rectangle( 12, 84, 140, 26) };
         _btnPublish.Click += (_, _) => DoPublish();
 
-        _btnTrack = new Button { Text = "Track",   Bounds = new Rectangle(170, 104, 140, 26) };
+        _btnTrack = new Button { Text = "Track",   Bounds = new Rectangle(170, 84, 140, 26) };
         _btnTrack.Click += (_, _) => DoTrack();
 
-        _btnUpdate = new Button { Text = "Update",  Bounds = new Rectangle(328, 104, 140, 26) };
+        _btnUpdate = new Button { Text = "Update",  Bounds = new Rectangle(328, 84, 140, 26) };
         _btnUpdate.Click += (_, _) => DoUpdate();
 
-        _btnFinish = new Button { Text = "Finish",  Bounds = new Rectangle(486, 104, 140, 26) };
+        _btnFinish = new Button { Text = "Finish",  Bounds = new Rectangle(486, 84, 140, 26) };
         _btnFinish.Click += (_, _) => DoFinish();
 
-        // ── Checkboxes row: side by side on the same line ─────────────────────
+        // ── Checkboxes stacked below the Finish button ─────────────────────────
         _chkKeep = new CheckBox
         {
             Text   = "Keep branch after finish",
-            Bounds = new Rectangle(12, 138, 220, 20)
+            Bounds = new Rectangle(444, 114, 182, 20)
         };
         _chkNoFetch = new CheckBox
         {
             Text   = "No fetch (--no-fetch)",
-            Bounds = new Rectangle(248, 138, 200, 20)
+            Bounds = new Rectangle(444, 136, 182, 20)
         };
 
-        // ── Hint label: full GroupBox width ───────────────────────────────────
+        // ── Hint label ─────────────────────────────────────────────────────────
         var lblHint = new Label
         {
             Text      = "Track: cria branch local da remota   •   Update: traz mudanças da branch pai",
             AutoSize  = false,
             TextAlign = ContentAlignment.MiddleLeft,
             ForeColor = SystemColors.GrayText,
-            Bounds    = new Rectangle(12, 164, 614, 18)
+            Bounds    = new Rectangle(12, 162, 614, 18)
         };
 
         _grpManage.Controls.AddRange(
         [
-            _cboManageType, lblBranch, _lblManagePrefix, _cboManageBranch,
+            lblType, _cboManageType, lblBranch, _lblManagePrefix, _cboManageBranch,
             _btnPublish, _btnTrack, _btnUpdate, _btnFinish, _chkKeep, _chkNoFetch, lblHint
         ]);
         Controls.Add(_grpManage);
@@ -237,7 +257,7 @@ public sealed class GitFlowForm : Form
         _grpResult = new GroupBox
         {
             Text   = "Result of git flow command run",
-            Bounds = new Rectangle(8, 380, 638, 342),
+            Bounds = new Rectangle(8, 364, 638, 362),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _txtResult = new TextBox
@@ -487,14 +507,15 @@ public sealed class GitFlowForm : Form
     private void ShowAbout()
     {
         MessageBox.Show(
-            "git flow organiza o trabalho em branches de tipo feature, release, hotfix, " +
-            "bugfix e support.\n\n" +
-            "• start   — cria a branch a partir da base (develop por padrão)\n" +
-            "• publish — envia a branch para o remoto\n" +
-            "• track   — cria uma branch local que rastreia a remota\n" +
-            "• update  — traz mudanças da branch pai para a branch\n" +
-            "• finish  — mescla de volta e remove a branch\n\n" +
-            "Requer a extensão git-flow instalada (git-flow-next).",
+            "Botões:\n" +
+            "  Publish — envia a branch para o remoto (git flow <tipo> publish).\n" +
+            "  Track   — cria branch local rastreando a branch remota de mesmo nome.\n" +
+            "  Update  — traz commits da branch pai (ex.: develop) para a branch atual.\n" +
+            "  Finish  — mescla de volta e exclui a branch (git flow <tipo> finish).\n\n" +
+            "Checkboxes do Finish:\n" +
+            "  Keep branch after finish — mantém a branch após a mesclagem (flag -k).\n" +
+            "  No fetch (--no-fetch)   — não busca no remoto antes de finalizar.\n\n" +
+            "Requer git-flow-next instalado.",
             "About GitFlow", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 

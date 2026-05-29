@@ -43,6 +43,9 @@ public sealed class BranchHierarchyForm : Form
     private Button           _btnGitFlow          = null!;
     private Button           _btnGitFlowDedicated = null!;
     private Panel            _gitFlowButtonPanel  = null!;
+    private Button           _btnPull             = null!;
+    private Button           _btnPush             = null!;
+    private Button           _btnCommitDedicated  = null!;
     private TreeView         _tree        = null!;
     private StatusStrip      _status      = null!;
     private ToolStripStatusLabel _statusLbl = null!;
@@ -241,6 +244,7 @@ public sealed class BranchHierarchyForm : Form
             ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
+            UpdatePullPushButtons();
         }
         finally { _tree.EndUpdate(); }
 
@@ -404,6 +408,15 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildGitFlowButtonPanel()
     {
+        _btnPull = new Button { Text = "Pull", Width = 80, Height = 24, Visible = false };
+        _btnPull.Click += (_, _) => DoPull();
+
+        _btnPush = new Button { Text = "Push", Width = 80, Height = 24, Visible = false };
+        _btnPush.Click += (_, _) => DoPush();
+
+        _btnCommitDedicated = new Button { Text = "Commit", Width = 80, Height = 24, Visible = false };
+        _btnCommitDedicated.Click += (_, _) => DoCommit();
+
         _btnGitFlowDedicated = new Button
         {
             Text   = "GitFlow",
@@ -415,11 +428,22 @@ public sealed class BranchHierarchyForm : Form
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
 
         _gitFlowButtonPanel = new Panel { Dock = DockStyle.Top, Height = 32 };
-        _gitFlowButtonPanel.Controls.Add(_btnGitFlowDedicated);
+        _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated]);
+
+        // Pull and Push (visible only when a branch is checked out) and Commit are left-aligned;
+        // GitFlow is centered.
         _gitFlowButtonPanel.Layout += (_, _) =>
+        {
+            int y = (_gitFlowButtonPanel.Height - 24) / 2;
+            _btnPull.Location = new Point(8, y);
+            _btnPush.Location = new Point(8 + _btnPull.Width + 4, y);
+            int commitX = _btnPull.Visible
+                ? 8 + _btnPull.Width + 4 + _btnPush.Width + 4
+                : 8;
+            _btnCommitDedicated.Location = new Point(commitX, y);
             _btnGitFlowDedicated.Location = new Point(
-                (_gitFlowButtonPanel.Width  - _btnGitFlowDedicated.Width)  / 2,
-                (_gitFlowButtonPanel.Height - _btnGitFlowDedicated.Height) / 2);
+                (_gitFlowButtonPanel.Width - _btnGitFlowDedicated.Width) / 2, y);
+        };
     }
 
     private void BuildTreeView()
@@ -1189,6 +1213,22 @@ public sealed class BranchHierarchyForm : Form
     private void UpdateBranchLabel()
         => _lblBranch.Text = $"Branch: {_svc.GetCurrentBranch()}";
 
+    private void UpdatePullPushButtons()
+    {
+        var current    = _localBranches.FirstOrDefault(b => b.IsCurrent);
+        bool hasBranch = current != null;
+        _btnPull           .Visible = hasBranch;
+        _btnPush           .Visible = hasBranch;
+        _btnCommitDedicated.Visible = hasBranch;
+        _gitFlowButtonPanel.PerformLayout(); // reposition buttons after visibility change
+        if (!hasBranch) return;
+
+        int behind = current!.BehindCount;
+        int ahead  = current.AheadCount;
+        _btnPull.Text = behind > 0 ? $"Pull ↓{behind}" : "Pull";
+        _btnPush.Text = ahead  > 0 ? $"Push ↑{ahead}"  : "Push";
+    }
+
     private BranchInfo? SelectedBranch()
         => _tree.SelectedNode?.Tag as BranchInfo;
 
@@ -1297,6 +1337,40 @@ public sealed class BranchHierarchyForm : Form
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
+
+    private void DoPull()
+    {
+        _btnPull.Enabled = false;
+        _ = Task.Run(() => _svc.Pull()).ContinueWith(t =>
+        {
+            var (ok, err) = t.Result;
+            BeginInvoke(() =>
+            {
+                _btnPull.Enabled = true;
+                RefreshTree();
+                _notifyRepoChanged?.Invoke();
+                if (!ok && !string.IsNullOrEmpty(err))
+                    ShowError("Pull falhou", err);
+            });
+        });
+    }
+
+    private void DoPush()
+    {
+        _btnPush.Enabled = false;
+        _ = Task.Run(() => _svc.Push()).ContinueWith(t =>
+        {
+            var (ok, err) = t.Result;
+            BeginInvoke(() =>
+            {
+                _btnPush.Enabled = true;
+                RefreshTree();
+                _notifyRepoChanged?.Invoke();
+                if (!ok && !string.IsNullOrEmpty(err))
+                    ShowError("Push falhou", err);
+            });
+        });
+    }
 
     private void DoCommit()
     {

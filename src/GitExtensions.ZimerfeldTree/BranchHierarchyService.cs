@@ -284,6 +284,28 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>Runs <c>git pull</c> (merge strategy) for the current branch.</summary>
+    public (bool ok, string error) Pull()
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull("pull");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Runs <c>git push</c> for the current branch.</summary>
+    public (bool ok, string error) Push()
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull("push");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     public (bool ok, string error) RebaseBranch(string branchName)
     {
         try
