@@ -1270,9 +1270,10 @@ public sealed class BranchHierarchyForm : Form
 
         int behind = current!.BehindCount;
         int ahead  = current.AheadCount;
-        _btnPull.Text = behind > 0 ? $"Pull ↓{behind}" : "Pull";
-        _btnPush.Text = ahead  > 0 ? $"Push ↑{ahead}"  : "Push";
-        _btnCommitDedicated.Text = $"Commit ({_svc.GetPendingChangesCount()})";
+        _btnPull.Text = behind > 0 ? $"Pull (↓{behind})" : "Pull";
+        _btnPush.Text = ahead  > 0 ? $"Push (↑{ahead})"  : "Push";
+        int pending = _svc.GetPendingChangesCount();
+        _btnCommitDedicated.Text = pending > 0 ? $"Commit ({pending})" : "Commit";
     }
 
     private BranchInfo? SelectedBranch()
