@@ -284,12 +284,12 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
-    /// <summary>Runs <c>git pull</c> (merge strategy) for the current branch.</summary>
+    /// <summary>Runs <c>git pull --tags</c> for the current branch, fetching all remote tags.</summary>
     public (bool ok, string error) Pull()
     {
         try
         {
-            var (_, err, code) = RunGitFull("pull");
+            var (_, err, code) = RunGitFull("pull --tags");
             return code == 0 ? (true, string.Empty) : (false, err.Trim());
         }
         catch (Exception ex) { return (false, ex.Message); }

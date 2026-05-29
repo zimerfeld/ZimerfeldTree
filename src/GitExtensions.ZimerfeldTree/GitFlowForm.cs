@@ -48,6 +48,9 @@ public sealed class GitFlowForm : Form
     // ── Bottom close button ──
     private Button _btnClose = null!;
 
+    /// <summary>Set after a successful "release" finish; BranchHierarchyForm reads this to focus the new tag.</summary>
+    public string? LastFinishedReleaseTag { get; private set; }
+
     public GitFlowForm(BranchHierarchyService svc)
     {
         _svc = svc;
@@ -172,7 +175,7 @@ public sealed class GitFlowForm : Form
     {
         _grpManage = new GroupBox
         {
-            Text   = "Manage existing branches:",
+            Text   = "Manage existing branches",
             Bounds = new Rectangle(8, 164, 638, 192),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
@@ -310,20 +313,20 @@ public sealed class GitFlowForm : Form
         _grpResult .TabIndex = 3;
         _btnClose  .TabIndex = 4;
 
-        // grpStart — top→bottom, right→left
+        // grpStart — top→bottom, left→right
         _cboStartType.TabIndex = 0;
-        _btnStart    .TabIndex = 1;   // row 2, rightmost
-        _txtStartName.TabIndex = 2;
-        _cboBasedOn  .TabIndex = 3;   // row 3, right
-        _chkBasedOn  .TabIndex = 4;
+        _txtStartName.TabIndex = 1;
+        _btnStart    .TabIndex = 2;   // row 2, rightmost
+        _chkBasedOn  .TabIndex = 3;
+        _cboBasedOn  .TabIndex = 4;   // row 3, right
 
-        // grpManage — top→bottom, right→left
+        // grpManage — top→bottom, left→right
         _cboManageType  .TabIndex = 0;
         _cboManageBranch.TabIndex = 1;
-        _btnFinish      .TabIndex = 2;  // row 3, rightmost
-        _btnUpdate      .TabIndex = 3;
-        _btnTrack       .TabIndex = 4;
-        _btnPublish     .TabIndex = 5;
+        _btnPublish     .TabIndex = 2;  // row 3, leftmost
+        _btnTrack       .TabIndex = 3;
+        _btnUpdate      .TabIndex = 4;
+        _btnFinish      .TabIndex = 5;  // row 3, rightmost
         _chkKeep        .TabIndex = 6;
         _chkNoFetch     .TabIndex = 7;
 
@@ -494,15 +497,32 @@ public sealed class GitFlowForm : Form
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
 
+        bool isRelease = string.Equals(type, "release", StringComparison.OrdinalIgnoreCase);
+
         string flags = string.Empty;
         if (_chkKeep.Checked)    flags += "-k ";
         if (_chkNoFetch.Checked) flags += "--no-fetch ";
-        bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"");
+
+        // For release branches (without --no-fetch): push to origin first so git-flow's
+        // remote fetch finds the branch and avoids "couldn't find remote ref release/X".
+        if (isRelease && !_chkNoFetch.Checked)
+        {
+            string pushRemote = _svc.GetDefaultRemote();
+            if (pushRemote.Length > 0)
+            {
+                string fullBranch = _svc.GetGitFlowPrefix(type) + name;
+                if (!RunFlow($"push {pushRemote} {fullBranch}")) return;
+            }
+        }
+
+        bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"", append: true);
 
         // After a successful "release" finish: push master, push develop,
         // and (if both succeed) checkout develop.
         if (!ok) return;
-        if (!string.Equals(type, "release", StringComparison.OrdinalIgnoreCase)) return;
+        if (!isRelease) return;
+
+        LastFinishedReleaseTag = name;
 
         string master  = _svc.GetGitFlowBranchName("master");
         string develop = _svc.GetGitFlowBranchName("develop");

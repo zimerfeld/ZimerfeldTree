@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.77**
+**Versão atual: 1.0.79**
 
 TreeOfLife
 
@@ -44,7 +44,7 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 - **Overlay em toda atualização**: o painel de progresso aparece sempre que a árvore é recarregada — abertura inicial, checkout, nova branch, merge, rename, delete, GitFlow, refresh manual e troca de repositório
 - **Botão Cancelar no overlay**: permite abortar o carregamento a qualquer momento (o cancelamento ocorre entre as etapas git, preservando os dados anteriores na árvore)
 - **Formulário bloqueado durante carregamento**: todos os campos e botões ficam desabilitados enquanto o overlay está ativo e são reativados ao término (ou ao cancelar)
-- **Botão "Fechar"** no canto inferior direito da janela (atalho: tecla **Esc**)
+- **Botão "Fechar"** centralizado horizontalmente na parte inferior da janela (atalho: tecla **Esc**)
 
 ### Seletor de Working Directory e Branch
 
@@ -63,11 +63,14 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 - Campo de pesquisa filtra branches em todas as seções simultaneamente
 - Filtro preserva nós pai que possuem filhos correspondentes
 
-### Botão GitFlow dedicado
+### Botões Pull / Push / Commit / GitFlow
 
-- Botão **GitFlow** sempre visível e **centralizado** acima do painel da árvore
-- Abre diretamente a janela de operações GitFlow (mesma janela do item do menu de contexto)
-- Disponível a qualquer momento, independentemente do estado do painel de aviso GitFlow
+Exibidos acima da árvore quando há uma branch em checkout:
+
+- **Pull** — executa `git pull --tags`: traz commits da branch rastreada **e** todas as tags do remoto, garantindo que tags de releases criadas em outras máquinas apareçam na seção TAGS
+- **Push** — executa `git push` para a branch atual; o botão mostra `Push ↑N` quando há commits locais pendentes
+- **Commit (N)** — abre a janela de Commit nativa do GitExtensions; `N` = nº de alterações pendentes
+- **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 
 ### Persistência de estado da árvore
 
@@ -130,10 +133,14 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 - **Track** — `git flow <tipo> track "<nome>"`: cria uma branch local que rastreia a branch remota correspondente (útil para branches iniciadas por outra pessoa)
 - **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
 - **Finish** — `git flow <tipo> finish [-k] [--no-fetch] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
-- **Finish de `release` — pós-finalização automática**: quando o tipo é `release` e o `finish` termina sem erro, o painel automaticamente executa em sequência (com as saídas anexadas à janela de resultado):
-  1. `git push <remote> <master>` (nome lido de `gitflow.branch.master`)
-  2. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
-  3. `git checkout <develop>` — só se os dois push tiveram sucesso
+- **Finish de `release` — fluxo completo automático**: quando o tipo é `release` e o checkbox **No fetch** não está marcado, o painel executa automaticamente em sequência (com as saídas anexadas à janela de resultado):
+  1. `git push <remote> release/<nome>` — envia a release para o remoto **antes** do finish, evitando o erro `fatal: couldn't find remote ref release/<nome>` gerado pelo git-flow ao buscar a branch remota
+  2. `git flow release finish [-k] "<nome>"`
+  3. `git push <remote> <master>` (nome lido de `gitflow.branch.master`)
+  4. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
+  5. `git checkout <develop>` — só se os dois push tiveram sucesso
+  
+  Ao concluir com sucesso, a seção **TAGS** da árvore é expandida automaticamente e o foco vai para o tag criado pelo finish.
 
   O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se algum passo falhar, o fluxo para naquele ponto e a mensagem de erro é exibida.
 

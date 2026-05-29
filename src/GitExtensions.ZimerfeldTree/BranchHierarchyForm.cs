@@ -29,6 +29,7 @@ public sealed class BranchHierarchyForm : Form
     private Dictionary<string, string?>  _remoteParentMap = [];
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
+    private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -247,6 +248,10 @@ public sealed class BranchHierarchyForm : Form
             UpdatePullPushButtons();
         }
         finally { _tree.EndUpdate(); }
+
+        var postAction = _postRefreshAction;
+        _postRefreshAction = null;
+        postAction?.Invoke();
 
         if (showOverlay)
         {
@@ -562,10 +567,10 @@ public sealed class BranchHierarchyForm : Form
         _bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 36 };
         _bottomPanel.Controls.Add(_btnClose);
 
-        // Keep button right-aligned with margin whenever the panel is laid out.
+        // Keep button centred horizontally whenever the panel is laid out.
         _bottomPanel.Layout += (_, _) =>
             _btnClose.Location = new Point(
-                _bottomPanel.Width  - _btnClose.Width  - 8,
+                (_bottomPanel.Width  - _btnClose.Width) / 2,
                 (_bottomPanel.Height - _btnClose.Height) / 2);
     }
 
@@ -978,6 +983,7 @@ public sealed class BranchHierarchyForm : Form
 
         string displayLabel = info.IsCurrent ? $"[{label}]" : label;
         string text         = displayLabel + tracking;
+        if (info.IsCurrent) text += "  "; // win32 measures with tree font (regular); extra room for bold rendering
 
         int imgIdx = GetBranchIconIndex(info);
 
@@ -1215,18 +1221,18 @@ public sealed class BranchHierarchyForm : Form
         // Top panel (only interactive control)
         _cboRepo.TabIndex = 0;
 
-        // Filter panel — right→left
-        _btnRefresh.TabIndex = 0;
-        _txtFilter .TabIndex = 1;
+        // Filter panel — left→right
+        _txtFilter .TabIndex = 0;
+        _btnRefresh.TabIndex = 1;
 
         // Warn panel — right→left
         _btnGitFlow.TabIndex = 0;
 
-        // GitFlow button panel — right→left
-        _btnGitFlowDedicated.TabIndex = 0;
-        _btnCommitDedicated .TabIndex = 1;
-        _btnPush            .TabIndex = 2;
-        _btnPull            .TabIndex = 3;
+        // GitFlow button panel — left→right
+        _btnPull            .TabIndex = 0;
+        _btnPush            .TabIndex = 1;
+        _btnCommitDedicated .TabIndex = 2;
+        _btnGitFlowDedicated.TabIndex = 3;
 
         // Bottom panel
         _btnClose.TabIndex = 0;
@@ -1501,8 +1507,33 @@ public sealed class BranchHierarchyForm : Form
         }
 
         dlg.ShowDialog(this);
+
+        if (dlg.LastFinishedReleaseTag is string tag)
+            _postRefreshAction = () => FocusTagNode(tag);
+
         RefreshTree();
         _notifyRepoChanged?.Invoke();
+    }
+
+    private void FocusTagNode(string tagName)
+    {
+        _tagsRoot.Expand();
+        var node = FindTagNode(_tagsRoot.Nodes, tagName);
+        if (node is null) return;
+        _tree.SelectedNode = node;
+        node.EnsureVisible();
+        _tree.Focus();
+    }
+
+    private static TreeNode? FindTagNode(TreeNodeCollection nodes, string tagName)
+    {
+        foreach (TreeNode node in nodes)
+        {
+            if (node.Tag is BranchInfo bi && bi.FullName == tagName) return node;
+            var found = FindTagNode(node.Nodes, tagName);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private void DoMerge()
