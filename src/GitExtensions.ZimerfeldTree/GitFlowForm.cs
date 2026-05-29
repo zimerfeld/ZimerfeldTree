@@ -12,6 +12,10 @@ public sealed class GitFlowForm : Form
 {
     private readonly BranchHierarchyService _svc;
 
+    private static readonly string SettingsFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "GitExtensions", "ZimerfeldTree.gitflowsettings.json");
+
     // ── Header ──
     private Label     _lblHead   = null!;
     private LinkLabel _lnkAbout  = null!;
@@ -65,7 +69,8 @@ public sealed class GitFlowForm : Form
 
         CancelButton = _btnClose;
 
-        Load += (_, _) => InitData();
+        SetTabOrder();
+        Load += (_, _) => { InitData(); ApplySettings(); };
     }
 
     // ── Build UI ────────────────────────────────────────────────────────────
@@ -224,14 +229,18 @@ public sealed class GitFlowForm : Form
         // ── Checkboxes stacked below the Finish button ─────────────────────────
         _chkKeep = new CheckBox
         {
-            Text   = "Keep branch after finish",
-            Bounds = new Rectangle(444, 114, 182, 20)
+            Text    = "Keep branch after finish",
+            Bounds  = new Rectangle(444, 114, 182, 20),
+            Checked = true  // default: keep branch; overridden by saved settings on Load
         };
+        _chkKeep.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
+
         _chkNoFetch = new CheckBox
         {
             Text   = "No fetch (--no-fetch)",
             Bounds = new Rectangle(444, 136, 182, 20)
         };
+        _chkNoFetch.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
 
         // ── Hint label ─────────────────────────────────────────────────────────
         var lblHint = new Label
@@ -288,6 +297,73 @@ public sealed class GitFlowForm : Form
         };
         _btnClose.Click += (_, _) => Close();
         Controls.Add(_btnClose);
+    }
+
+    // ── Tab order ───────────────────────────────────────────────────────────
+
+    private void SetTabOrder()
+    {
+        // Form-level: top→bottom visually, right→left within rows
+        _lnkAbout  .TabIndex = 0;
+        _grpStart  .TabIndex = 1;
+        _grpManage .TabIndex = 2;
+        _grpResult .TabIndex = 3;
+        _btnClose  .TabIndex = 4;
+
+        // grpStart — top→bottom, right→left
+        _cboStartType.TabIndex = 0;
+        _btnStart    .TabIndex = 1;   // row 2, rightmost
+        _txtStartName.TabIndex = 2;
+        _cboBasedOn  .TabIndex = 3;   // row 3, right
+        _chkBasedOn  .TabIndex = 4;
+
+        // grpManage — top→bottom, right→left
+        _cboManageType  .TabIndex = 0;
+        _cboManageBranch.TabIndex = 1;
+        _btnFinish      .TabIndex = 2;  // row 3, rightmost
+        _btnUpdate      .TabIndex = 3;
+        _btnTrack       .TabIndex = 4;
+        _btnPublish     .TabIndex = 5;
+        _chkKeep        .TabIndex = 6;
+        _chkNoFetch     .TabIndex = 7;
+
+        // grpResult
+        _txtResult.TabIndex = 0;
+    }
+
+    // ── Settings persistence (checkboxes) ───────────────────────────────────
+
+    private void ApplySettings()
+    {
+        var (keepBranch, noFetch) = LoadSettings();
+        _chkKeep   .Checked = keepBranch;
+        _chkNoFetch.Checked = noFetch;
+    }
+
+    private static (bool keepBranch, bool noFetch) LoadSettings()
+    {
+        try
+        {
+            if (!File.Exists(SettingsFilePath)) return (true, false);
+            string json = File.ReadAllText(SettingsFilePath);
+            bool keep    = json.Contains("\"keepBranchAfterFinish\":true");
+            bool noFetch = json.Contains("\"noFetch\":true");
+            return (keep, noFetch);
+        }
+        catch { return (true, false); }
+    }
+
+    private static void SaveSettings(bool keepBranch, bool noFetch)
+    {
+        try
+        {
+            string dir = Path.GetDirectoryName(SettingsFilePath)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            File.WriteAllText(SettingsFilePath,
+                $"{{\"keepBranchAfterFinish\":{(keepBranch ? "true" : "false")}," +
+                $"\"noFetch\":{(noFetch ? "true" : "false")}}}");
+        }
+        catch { }
     }
 
     // ── Data ────────────────────────────────────────────────────────────────

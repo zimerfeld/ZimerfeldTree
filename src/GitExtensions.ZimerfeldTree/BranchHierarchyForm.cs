@@ -281,6 +281,7 @@ public sealed class BranchHierarchyForm : Form
         BuildStatusStrip();
         BuildBottomPanel();
         BuildLoadingOverlay();
+        SetTabOrder();
 
         // Layout order (Dock fills from bottom and top inward, Fill takes the remainder).
         // Added last = topmost for DockStyle.Top; visual order top→bottom:
@@ -1197,6 +1198,40 @@ public sealed class BranchHierarchyForm : Form
         node.Collapse();
     }
 
+    /// <summary>
+    /// Sets TabIndex on every interactive control: top→bottom visually,
+    /// right→left within each row.
+    /// </summary>
+    private void SetTabOrder()
+    {
+        // Panels on the form — visual order top→bottom
+        _topPanel           .TabIndex = 0;
+        _filterPanel        .TabIndex = 1;
+        _warnPanel          .TabIndex = 2;
+        _gitFlowButtonPanel .TabIndex = 3;
+        _tree               .TabIndex = 4;
+        _bottomPanel        .TabIndex = 5;
+
+        // Top panel (only interactive control)
+        _cboRepo.TabIndex = 0;
+
+        // Filter panel — right→left
+        _btnRefresh.TabIndex = 0;
+        _txtFilter .TabIndex = 1;
+
+        // Warn panel — right→left
+        _btnGitFlow.TabIndex = 0;
+
+        // GitFlow button panel — right→left
+        _btnGitFlowDedicated.TabIndex = 0;
+        _btnCommitDedicated .TabIndex = 1;
+        _btnPush            .TabIndex = 2;
+        _btnPull            .TabIndex = 3;
+
+        // Bottom panel
+        _btnClose.TabIndex = 0;
+    }
+
     /// <summary>Enables or disables all interactive controls while the loading overlay is active.</summary>
     private void SetFormEnabled(bool enabled)
     {
@@ -1231,6 +1266,7 @@ public sealed class BranchHierarchyForm : Form
         int ahead  = current.AheadCount;
         _btnPull.Text = behind > 0 ? $"Pull ↓{behind}" : "Pull";
         _btnPush.Text = ahead  > 0 ? $"Push ↑{ahead}"  : "Push";
+        _btnCommitDedicated.Text = $"Commit ({_svc.GetPendingChangesCount()})";
     }
 
     private BranchInfo? SelectedBranch()
