@@ -28,7 +28,7 @@ internal static class NodeIcons
 
     // GitFlow-specific branch icons
     public const int BranchMaster  = 8;  // master / main   — gold shield
-    public const int BranchDevelop = 9;  // develop         — blue toolbox
+    public const int BranchDevelop = 9;  // develop         — gray open-end wrench
     public const int BranchFeature = 10; // feature/*       — green leaf
     public const int BranchBugfix  = 11; // bugfix/*        — red ladybug
     public const int BranchRelease = 12; // release/*       — brown package
@@ -63,8 +63,8 @@ internal static class NodeIcons
         _list.Images.Add(Ribbon());
         // 8  master/main   — gold shield
         _list.Images.Add(Shield());
-        // 9  develop        — blue toolbox
-        _list.Images.Add(Toolbox());
+        // 9  develop        — gray open-end wrench
+        _list.Images.Add(Wrench());
         // 10 feature/*      — green leaf
         _list.Images.Add(Leaf());
         // 11 bugfix/*       — red ladybug
@@ -208,29 +208,37 @@ internal static class NodeIcons
     }
 
     /// <summary>
-    /// Screwdriver (orange handle, gray shaft) crossed with a hammer (brown handle,
-    /// dark-gray head) forming an X — develop branch.
+    /// Gray open-end wrench (spanner): a diagonal handle with a solid jaw head whose
+    /// "mouth" (open slot) is carved out toward the upper-right — develop branch.
     /// </summary>
-    private static Bitmap Toolbox()
+    private static Bitmap Wrench()
     {
         var bmp = Blank(); using var g = AA(bmp);
 
-        // ── Screwdriver (top-right → bottom-left, drawn first / behind) ──────
-        using var sdHandle = new SolidBrush(Color.FromArgb(0xF5, 0x7F, 0x17));  // orange
-        using var sdShaft  = new Pen(Color.FromArgb(0x90, 0x90, 0x90), 1.4f)
-            { StartCap = LineCap.Round, EndCap = LineCap.Flat };
-        using var sdTip    = new Pen(Color.FromArgb(0x50, 0x50, 0x50), 2f)
-            { StartCap = LineCap.Round, EndCap = LineCap.Round };
-        g.FillEllipse(sdHandle, 10, 0, 5, 5);          // handle oval
-        g.DrawLine(sdShaft, 12f, 5f, 3f, 14f);         // shaft
-        g.DrawLine(sdTip,   2.5f, 13.5f, 4f, 15f);    // flat tip
+        Color gray = Color.FromArgb(0x8A, 0x8A, 0x8A);   // tool gray
+        using var body  = new SolidBrush(gray);
+        using var shaft = new Pen(gray, 3.2f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
 
-        // ── Hammer (top-left → bottom-right, drawn on top) ────────────────────
-        using var hamHead   = new SolidBrush(Color.FromArgb(0x45, 0x45, 0x45));  // dark gray
-        using var hamHandle = new Pen(Color.FromArgb(0x8B, 0x45, 0x13), 2f)
-            { StartCap = LineCap.Round, EndCap = LineCap.Round };
-        g.DrawLine(hamHandle, 4f, 5f, 13f, 13f);        // handle
-        g.FillRectangle(hamHead, 0, 1, 6, 4);           // head body
+        // Handle: diagonal from lower-left up to the head
+        g.DrawLine(shaft, 4.5f, 13f, 11f, 5.5f);
+
+        // Jaw head: a solid disc at the upper end (center ≈ (11.5, 5), r ≈ 4)
+        g.FillEllipse(body, 7.5f, 1f, 8f, 8f);
+
+        // Carve the open "mouth": erase a slanted slot from the head center out
+        // past the upper-right rim, leaving two prongs — the open-end jaw.
+        var prevMode = g.CompositingMode;
+        g.CompositingMode = CompositingMode.SourceCopy;
+        using var erase = new SolidBrush(Color.Transparent);
+        PointF[] mouth =
+        [
+            new(10.30f, 3.80f),   // inner-left  (near center)
+            new(12.70f, 6.20f),   // inner-right (near center)
+            new(16.24f, 2.66f),   // outer-right (beyond rim)
+            new(13.84f, 0.26f),   // outer-left  (beyond rim)
+        ];
+        g.FillPolygon(erase, mouth);
+        g.CompositingMode = prevMode;
 
         return bmp;
     }
